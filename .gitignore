@@ -1,3 +1,6 @@
+# Generated binary files.
+*.vsix
+
 # Dependency directories
 node_modules/
 
