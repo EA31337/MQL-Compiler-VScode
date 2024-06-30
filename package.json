@@ -2,16 +2,54 @@
   "displayName": "MQL Compiler (VSCode)",
   "name": "mql-compiler-vscode",
   "engines": {
-    "vscode": "^1.63.0"
+    "vscode": "^1.90.0"
   },
   "categories": [
     "Programming Languages"
   ],
   "version": "0.1.0",
   "description": "MQL Compiler for VSCode",
-  "main": "index.js",
+  "main": "src/index.js",
+  "activationEvents": [
+    "onCommand:mql_tools.compileFile",
+    "onLanguage:cpp"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "mql_compiler.compileFile",
+        "title": "%mql_compiler.commands.compileFile.title%"
+      }
+    ],
+    "configuration": {
+        "title": "MQL Compiler",
+        "properties": {
+          "mql_compiler.MTE.MetaEditor4Path": {
+            "type": "string",
+            "default": "",
+            "description": "%mql_compiler.configuration.MetaEditor4Path.description%"
+          },
+          "mql_compiler.MTE.MetaEditor5Path": {
+            "type": "string",
+            "default": "",
+            "description": "%mql_compiler.configuration.MetaEditor5Path.description%"
+          }
+        }
+    },
+    "languages": [
+      {
+        "id": "cpp",
+        "extensions": [
+          ".mq4",
+          ".mq5",
+          ".mqh"
+        ]
+      }
+    ]
+  },
   "scripts": {
     "lint": "eslint .",
+    "package": "vsce package",
     "pretest": "npm run lint",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
