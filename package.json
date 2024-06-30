@@ -17,13 +17,30 @@
   "contributes": {
     "commands": [
       {
+        "command": "mql_compiler.checkSyntax",
+        "icon": {
+          "dark": "$(check)",
+          "light": "$(check)"
+        },
+        "title": "%mql_compiler.commands.checkSyntax.title%"
+      },
+      {
         "command": "mql_compiler.compileFile",
+        "icon": {
+          "dark": "$(play)",
+          "light": "$(play)"
+        },
         "title": "%mql_compiler.commands.compileFile.title%"
       }
     ],
     "configuration": {
       "title": "MQL Compiler",
       "properties": {
+        "mql_compiler.MTE.IncludePath": {
+          "type": "string",
+          "default": "",
+          "description": "%mql_compiler.configuration.IncludePath.description%"
+        },
         "mql_compiler.MTE.MetaEditor4Path": {
           "type": "string",
           "default": "",
@@ -45,7 +62,21 @@
           ".mqh"
         ]
       }
-    ]
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "resourceExtname == .mq4 || resourceExtname == .mq5",
+          "command": "mql_compiler.checkSyntax",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .mq4 || resourceExtname == .mq5",
+          "command": "mql_compiler.compileFile",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
     "lint": "eslint .",

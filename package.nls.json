@@ -1,5 +1,7 @@
 {
+  "mql_compiler.commands.checkSyntax.title": "Check syntax",
   "mql_compiler.commands.compileFile.title": "Compile file",
+  "mql_compiler.configuration.IncludePath.description": "(optional) Path to include directory",
   "mql_compiler.configuration.MetaEditor4Path.description": "Path to MetaEditor 4 (e.g. /Path/MT4/metaeditor.exe)",
   "mql_compiler.configuration.MetaEditor5Path.description": "Path to MetaEditor 5 (e.g. /Path/MT5/metaeditor64.exe)"
 }
