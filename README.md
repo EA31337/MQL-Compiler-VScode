@@ -26,3 +26,12 @@ Alternatively to install extension from the command-line, run:
 ```console
 code --install-extension mql-compiler-vscode-0.1.0.vsix
 ```
+
+## Localization
+
+Localization is handled by microsoft/vscode-l10n extension.
+
+To create new translation, you can create a `package.nls.{locale}.json` file.
+
+VS Code will automatically load the correct file based on the locale of the
+user.

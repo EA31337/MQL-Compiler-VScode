@@ -22,19 +22,19 @@
       }
     ],
     "configuration": {
-        "title": "MQL Compiler",
-        "properties": {
-          "mql_compiler.MTE.MetaEditor4Path": {
-            "type": "string",
-            "default": "",
-            "description": "%mql_compiler.configuration.MetaEditor4Path.description%"
-          },
-          "mql_compiler.MTE.MetaEditor5Path": {
-            "type": "string",
-            "default": "",
-            "description": "%mql_compiler.configuration.MetaEditor5Path.description%"
-          }
+      "title": "MQL Compiler",
+      "properties": {
+        "mql_compiler.MTE.MetaEditor4Path": {
+          "type": "string",
+          "default": "",
+          "description": "%mql_compiler.configuration.MetaEditor4Path.description%"
+        },
+        "mql_compiler.MTE.MetaEditor5Path": {
+          "type": "string",
+          "default": "",
+          "description": "%mql_compiler.configuration.MetaEditor5Path.description%"
         }
+      }
     },
     "languages": [
       {
@@ -74,6 +74,7 @@
   "homepage": "https://github.com/EA31337/MQL-Compiler-VScode#README",
   "devDependencies": {
     "@types/vscode": "^1.90.0",
+    "@vscode/l10n": "^0.0.18",
     "@vscode/vsce": "^2.29.0",
     "eslint": "^9.6.0",
     "glob": "^10.4.2",
