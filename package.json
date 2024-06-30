@@ -11,7 +11,8 @@
   "description": "MQL Compiler for VSCode",
   "main": "src/index.js",
   "activationEvents": [
-    "onCommand:mql_tools.compileFile",
+    "onCommand:mql_compiler.checkSyntax",
+    "onCommand:mql_compiler.compileFile",
     "onLanguage:cpp"
   ],
   "contributes": {
@@ -104,11 +105,14 @@
   },
   "homepage": "https://github.com/EA31337/MQL-Compiler-VScode#README",
   "devDependencies": {
+    "@eslint/compat": "^1.1.0",
+    "@eslint/js": "^9.6.0",
     "@types/vscode": "^1.90.0",
     "@vscode/l10n": "^0.0.18",
     "@vscode/vsce": "^2.29.0",
-    "eslint": "^9.6.0",
     "glob": "^10.4.2",
-    "typescript": "^5.5.2"
+    "globals": "^15.7.0",
+    "typescript": "^5.5.2",
+    "typescript-eslint": "^7.14.1"
   }
 }
