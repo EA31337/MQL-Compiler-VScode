@@ -1,11 +1,11 @@
 {
   "displayName": "MQL Compiler (VSCode)",
   "name": "mql-compiler-vscode",
-	"engines": {
-	  "vscode": "^1.63.0"
-	},
+  "engines": {
+    "vscode": "^1.63.0"
+  },
   "categories": [
-      "Programming Languages"
+    "Programming Languages"
   ],
   "version": "0.1.0",
   "description": "MQL Compiler for VSCode",
@@ -33,5 +33,9 @@
   "bugs": {
     "url": "https://github.com/EA31337/MQL-Compiler-VScode/issues"
   },
-  "homepage": "https://github.com/EA31337/MQL-Compiler-VScode#README"
+  "homepage": "https://github.com/EA31337/MQL-Compiler-VScode#README",
+  "devDependencies": {
+    "eslint": "^9.6.0",
+    "typescript": "^5.5.2"
+  }
 }
