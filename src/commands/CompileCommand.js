@@ -9,7 +9,14 @@ const config = require('../config');
 const output = require('../output');
 
 // Executing .exe and wine processes.
-const { execFile } = require('child_process');
+const childProcess = require('child_process');
+
+const fs = require('fs');
+
+// Logging and VS Code warning/error/hint bubbles.
+const log = require('../log');
+const mtlog = require('../mtlog');
+const diagnostics = require('../diagnostics');
 
 /**
  * Checks syntax or compiles MQL file.
@@ -59,17 +66,18 @@ function CompileCommand(mode)
             output.show(true);
             output.appendLine(`[Starting compilation] >>> ${fileName} <<<`);
 
-            const platformExecutableName  = pathModule.basename(MetaDir);
-            const platformExecutableFolder = pathModule.dirname(MetaDir);
+            const platformExecutableName  = pathModule.basename(platformExecutablePath).toLowerCase();
+            const platformExecutableFolder = pathModule.dirname(platformExecutablePath);
+
+            console.log(`Exe name: "${platformExecutableName}", folder: "${platformExecutableFolder}"`);
 
             if (!(fs.existsSync(platformExecutableFolder) && (platformExecutableName === 'metaeditor.exe' || platformExecutableName === 'metaeditor64.exe'))) {
-                return resolve(), outputChannel.appendLine(`[Error] Could not locate metaeditor executable file!`);
+                return resolve(), output.appendLine(`[Error] Could not locate metaeditor executable file!`);
             }
 
             let cliInclude;
             let cliLog;
             let logDir = '';
-
 
             if (platformIncludePath.length) {
                 if (!fs.existsSync(incDir)) {
@@ -89,10 +97,12 @@ function CompileCommand(mode)
                     cliLog = path.replace(fileName, logDir + '.log');
                 }
             } else {
-                cliLog = path.replace(fileName, fileName.match(/.+(?=\.)/) + '.log');
+                cliLog = filePath.replace(fileName, fileName.match(/.+(?=\.)/) + '.log');
             }
 
             let command = `"${platformExecutablePath}" /compile:"${filePath}"${cliInclude}${mode == 1 ? '' : ' /s'} /log:"${cliLog}"`;
+
+            output.appendLine(`$ ${command}`);
 
             childProcess.exec(command, (err, stdout, stderror) => {
 
@@ -101,10 +111,19 @@ function CompileCommand(mode)
                 }
 
                 try {
-                    var data = fs.readFileSync(cliLog, 'ucs-2');
-                } catch (err) {
-                    return vscode.window.showErrorMessage(`${lg['err_read_log']} ${err}`), resolve();
+                    let data = fs.readFileSync(cliLog, 'ucs-2');
+
+                    data = log.replaceLog(data, mode == 1);
+
+                    var result = mtlog.parse(data);
+
+                    diagnostics.set(result.diagnostics);
+
+
+                  } catch (e) {
+                    return vscode.window.showErrorMessage(`Error: ${e}`), resolve();
                 }
+
 
                 /*
                 config.LogFile.DeleteLog && fs.unlink(cliLog, (err) => {
@@ -120,11 +139,17 @@ function CompileCommand(mode)
                 */
 
                 const end = new Date;
+
+                resolve();
             });
 
-            sleep(30000).then(() => { resolve(); });
+            // @todo Timeout withing 30s?
+            // sleep(30000).then(() => { resolve(); });
         });
-    }
-);
+      }
+  );
+}
 
-exports.CompileCommand = CompileCommand;
+module.exports = {
+  CompileCommand
+};

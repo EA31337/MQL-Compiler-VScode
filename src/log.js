@@ -1,3 +1,5 @@
+const url = require('url');
+
 function replaceLog(str, f) {
   let text = f ? '' : '\n\n', obj_hover = {}, ye;
   str.replace(/\u{FEFF}/gu, '').split('\n').forEach(item => {
@@ -57,6 +59,8 @@ function replaceLog(str, f) {
       }
     }
   });
+
+  return text;
 }
 
 
