@@ -12,8 +12,7 @@ const output = require('./output');
 /**
  * Extension has been enabled.
  */
-function activate(context)
-{
+function activate(context) {
   context.subscriptions.push(vscode.commands.registerCommand('mql_compiler.checkSyntax', () => CompileCommand(0)));
   context.subscriptions.push(vscode.commands.registerCommand('mql_compiler.compileFile', () => CompileCommand(1)));
   context.subscriptions.push(diagnostics.collection);
@@ -24,8 +23,7 @@ function activate(context)
 /**
  * Extension has been disabled.
  */
-function deactivate()
-{
+function deactivate() {
 }
 
 module.exports = {

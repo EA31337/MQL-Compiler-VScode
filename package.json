@@ -13,6 +13,9 @@
   "activationEvents": [
     "onLanguage:cpp"
   ],
+  "extensionDependencies": [
+    "ms-vscode.cpptools"
+  ],
   "contributes": {
     "commands": [
       {

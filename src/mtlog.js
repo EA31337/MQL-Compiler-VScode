@@ -1,6 +1,9 @@
 const vscode = require('vscode');
+const output = require('./output');
+const includes = require('./includes');
+const files = require('./files');
 
-const reFileNameOnly = /^'(.*?)(\.mq4|\.mq5|\.mqh|\.cpp|\.h)'$/i;
+const reFileNameOnly = /^'(.*?(\.mq4|\.mq5|\.mqh|\.cpp|\.h))'$/i;
 const reErrorOrWarning = /^(error : |warning : )(.*?) \((\d+),(\d+)\)$/;
 
 /**
@@ -8,7 +11,9 @@ const reErrorOrWarning = /^(error : |warning : )(.*?) \((\d+),(\d+)\)$/;
  *
  * @param {string} content
  */
-function parse(content) {
+async function parse(content, platformVersion) {
+  output.append(content);
+
   // Firstly, we split content into lines. We will be checking one line at a time.
   lines = content.split(/\r?\n|\r/);
 
@@ -23,7 +28,7 @@ function parse(content) {
     const isFileNameOnly = reFileNameOnly.exec(line);
 
     if (isFileNameOnly) {
-      currentFile = isFileNameOnly[0];
+      currentFile = isFileNameOnly[1];
       console.log(`Switching file to "${currentFile}".`);
       continue;
     }
@@ -31,15 +36,15 @@ function parse(content) {
     const isErrorOrWarning = reErrorOrWarning.exec(line);
 
     if (isErrorOrWarning) {
+      // We'll be adding diagnostics with related file URIs.
       console.log(isErrorOrWarning);
-      const isError  = isErrorOrWarning[1] === 'error : ';
-      const message  = isErrorOrWarning[2];
-      const lineNo   = parseInt(isErrorOrWarning[3]) - 1;
+      const isError = isErrorOrWarning[1] === 'error : ';
+      const message = isErrorOrWarning[2];
+      const lineNo = parseInt(isErrorOrWarning[3]) - 1;
       const startCol = parseInt(isErrorOrWarning[4]) - 1;
-      const endCol   = startCol + 1000;
-      //const uri      = currentFile; // @fixit.
-      const uri      = vscode.window.activeTextEditor.document.uri;
+      const endCol = startCol + 1000;
       const severity = isError ? vscode.DiagnosticSeverity.Error : vscode.DiagnosticSeverity.Warning;
+      const uri = await files.searchFileAndGenerateUri(currentFile);
 
       if (!result.diagnostics[uri])
         result.diagnostics[uri] = [];

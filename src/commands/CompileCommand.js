@@ -2,11 +2,15 @@ const vscode = require('vscode');
 
 const pathModule = require('path');
 
+const includes = require('../includes');
+
 // Extension configuration.
 const config = require('../config');
 
 // Console output.
 const output = require('../output');
+
+const files = require('../files');
 
 // Executing .exe and wine processes.
 const childProcess = require('child_process');
@@ -23,8 +27,9 @@ const diagnostics = require('../diagnostics');
  *
  * @param {boolean} mode 0 - Check syntax, 1 - Compile.
  */
-function CompileCommand(mode)
-{
+function CompileCommand(mode) {
+  const currentConfig = config.get();
+
   output.appendLine(`Compiling...`);
 
   // Saving current file before checking/compiling.
@@ -34,119 +39,122 @@ function CompileCommand(mode)
 
   output.appendLine(`Compiling file ${filePath}...`);
 
-  const fileExtension = pathModule.extname(filePath).toLowerCase();
-  const fileName      = pathModule.basename(filePath);
+  const fileInfo = includes.getInfo(filePath);
+  const platformVersion = includes.detectPlatformVersion(filePath);
 
-  let platformExecutablePath;
-  let platformIncludePath;
+  console.log(`Detected platform version ${platformVersion} for file "${filePath}".`);
 
-  // For .mqh files we need to detect whether we're working in MQL4 or MQL5 mode.
-  const platformDetectedMQL4 = vscode.workspace.name?.includes('MQL4');
-  const usePlatform4 = fileExtension === '.mq4' || fileExtension === '.mqh' && platformDetectedMQL4;
-  const usePlatform5 = fileExtension === '.mq5' || fileExtension === '.mqh' && !platformDetectedMQL4;
+  console.log(currentConfig, config.platformExecutablePath(platformVersion), config.platformIncludePath(platformVersion));
 
-  if (!usePlatform4 && !usePlatform5) {
-    vscode.window.showWarningMessage(`Error: Unsupported file format "${fileExtension}"!`);
-    return undefined;
+  // Setting include path for C/C++ extension.
+  if (config.platformIncludePath(platformVersion).length > 0) {
+    const platformIncludePath = config.platformIncludePath(platformVersion);
+    includes.setPath(platformIncludePath);
+    files.addFolderToWorkspace(platformIncludePath);
   }
 
-  platformExecutablePath = usePlatform4 ? config.MTE.MetaEditor4Path : config.MTE.MetaEditor5Path;
-  platformIncludePath    = usePlatform4 ? config.MTE.IncludePath4    : config.MTE.IncludePath5;
-
-  const exePath = `${platformExecutablePath} `;
+  const exePath = `${config.platformExecutablePath(platformVersion)} `;
 
   vscode.window.withProgress(
     {
-        location: vscode.ProgressLocation.Window,
-        title: `Processing MQL Code...`,
+      location: vscode.ProgressLocation.Window,
+      title: `Processing MQL Code...`,
     },
     () => {
-        return new Promise((resolve) => {
-            output.clear();
-            output.show(true);
-            output.appendLine(`[Starting compilation] >>> ${fileName} <<<`);
+      return new Promise((resolve) => {
+        output.clear();
+        output.show(true);
+        output.appendLine(`[Starting compilation] >>> ${fileInfo.fileName} <<<`);
 
-            const platformExecutableName  = pathModule.basename(platformExecutablePath).toLowerCase();
-            const platformExecutableFolder = pathModule.dirname(platformExecutablePath);
+        const platformExecutableName = pathModule.basename(config.platformExecutablePath(platformVersion)).toLowerCase();
+        const platformExecutableFolder = pathModule.dirname(config.platformExecutablePath(platformVersion));
 
-            console.log(`Exe name: "${platformExecutableName}", folder: "${platformExecutableFolder}"`);
+        console.log(`Exe name: "${platformExecutableName}", folder: "${platformExecutableFolder}"`);
 
-            if (!(fs.existsSync(platformExecutableFolder) && (platformExecutableName === 'metaeditor.exe' || platformExecutableName === 'metaeditor64.exe'))) {
-                return resolve(), output.appendLine(`[Error] Could not locate metaeditor executable file!`);
-            }
+        if (!(fs.existsSync(platformExecutableFolder) && (platformExecutableName === 'metaeditor.exe' || platformExecutableName === 'metaeditor64.exe'))) {
+          return resolve(), output.appendLine(`[Error] Could not locate metaeditor executable file!`);
+        }
 
-            let cliInclude;
-            let cliLog;
-            let logDir = '';
+        let cliInclude;
+        let cliLog;
+        let logDir = '';
 
-            if (platformIncludePath.length) {
-                if (!fs.existsSync(incDir)) {
-                    return resolve(), outputChannel.appendLine(`[Error]  ${CommI} [ ${incDir} ]`);
-                } else {
-                    cliInclude = ` /include:"${incDir}"`;
-                    //Cpp_prop(platformIncludePath);
-                }
-            } else {
-                cliInclude = '';
-            }
+        let platformIncludePathBaseFolder = '';
 
-            if (logDir.length) {
-                if (pathModule.extname(logDir) === '.log') {
-                    cliLog = path.replace(fileName, logDir);
-                } else {
-                    cliLog = path.replace(fileName, logDir + '.log');
-                }
-            } else {
-                cliLog = filePath.replace(fileName, fileName.match(/.+(?=\.)/) + '.log');
-            }
+        if (config.platformIncludePath(platformVersion).length > 0 && config.platformIncludePath(platformVersion).endsWith("/Include"))
+          platformIncludePathBaseFolder = config.platformIncludePath(platformVersion).substring(0, config.platformIncludePath(platformVersion).length - 8);
 
-            let command = `"${platformExecutablePath}" /compile:"${filePath}"${cliInclude}${mode == 1 ? '' : ' /s'} /log:"${cliLog}"`;
+        console.log(`platformIncludePathBaseFolder: ${platformIncludePathBaseFolder}`);
 
-            output.appendLine(`$ ${command}`);
+        if (platformIncludePathBaseFolder.length > 0) {
+          if (!fs.existsSync(platformIncludePathBaseFolder)) {
+            return resolve(), output.appendLine(`[Error] Passed include path (base folder) "${platformIncludePathBaseFolder}" doesn't exist!`);
+          } else {
+            cliInclude = ` /include:"${platformIncludePathBaseFolder}"`;
+            //Cpp_prop(platformIncludePath);
+          }
+        } else {
+          cliInclude = '';
+        }
 
-            childProcess.exec(command, (err, stdout, stderror) => {
+        if (logDir.length) {
+          if (pathModule.extname(logDir) === '.log') {
+            cliLog = path.replace(fileInfo.fileName, logDir);
+          } else {
+            cliLog = path.replace(fileInfo.fileName, logDir + '.log');
+          }
+        } else {
+          cliLog = filePath.replace(fileInfo.fileName, fileInfo.fileName.match(/.+(?=\.)/) + '.log');
+        }
 
-                if (stderror) {
-                    return resolve(), outputChannel.appendLine(`[Error] Compilation failed!`);
-                }
+        let command = `"${config.platformExecutablePath(platformVersion)}" /compile:"${filePath}"${cliInclude}${mode == 1 ? '' : ' /s'} /log:"${cliLog}"`;
 
-                try {
-                    let data = fs.readFileSync(cliLog, 'ucs-2');
+        output.appendLine(`$ ${command}`);
 
-                    data = log.replaceLog(data, mode == 1);
+        childProcess.exec(command, async (err, stdout, stderror) => {
 
-                    var result = mtlog.parse(data);
+          if (stderror) {
+            return resolve(), outputChannel.appendLine(`[Error] Compilation failed!`);
+          }
 
-                    diagnostics.set(result.diagnostics);
+          try {
+            let data = fs.readFileSync(cliLog, 'ucs-2');
+
+            data = log.replaceLog(data, mode == 1);
+
+            var result = await mtlog.parse(data, platformVersion);
+
+            diagnostics.clear();
+            diagnostics.set(result.diagnostics);
 
 
-                  } catch (e) {
-                    return vscode.window.showErrorMessage(`Error: ${e}`), resolve();
-                }
+          } catch (e) {
+            return vscode.window.showErrorMessage(`Error: ${e}`), resolve();
+          }
 
 
-                /*
-                config.LogFile.DeleteLog && fs.unlink(cliLog, (err) => {
-                        err && vscode.window.showErrorMessage(lg['err_remove_log']);
-                    });
+          /*
+          config.LogFile.DeleteLog && fs.unlink(cliLog, (err) => {
+                  err && vscode.window.showErrorMessage(lg['err_remove_log']);
+              });
 
-                switch (rt) {
-                    case 0: log = replaceLog(data, false); outputChannel.appendLine(String(log.text)); resolve(); break;
-                    case 1: log = replaceLog(data, true); outputChannel.appendLine(String(log.text)); resolve(); break;
-                    case 2: log = cme ? replaceLog(data, true) : replaceLog(data, false); break;
-                }
+          switch (rt) {
+              case 0: log = replaceLog(data, false); outputChannel.appendLine(String(log.text)); resolve(); break;
+              case 1: log = replaceLog(data, true); outputChannel.appendLine(String(log.text)); resolve(); break;
+              case 2: log = cme ? replaceLog(data, true) : replaceLog(data, false); break;
+          }
 
-                */
+          */
 
-                const end = new Date;
+          const end = new Date;
 
-                resolve();
-            });
-
-            // @todo Timeout withing 30s?
-            // sleep(30000).then(() => { resolve(); });
+          resolve();
         });
-      }
+
+        // @todo Timeout withing 30s?
+        // sleep(30000).then(() => { resolve(); });
+      });
+    }
   );
 }
 

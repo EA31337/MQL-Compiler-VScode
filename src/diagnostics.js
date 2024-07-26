@@ -11,7 +11,7 @@ function set(diagnosticsPerUri) {
 
     for (let diagnostic of diagnostics) {
       const range = new vscode.Range(new vscode.Position(diagnostic.lineNo, diagnostic.startCol), new vscode.Position(diagnostic.lineNo, diagnostic.endCol));
-      const item  = new vscode.Diagnostic(range, diagnostic.message, diagnostic.severity);
+      const item = new vscode.Diagnostic(range, diagnostic.message, diagnostic.severity);
       diagnosticItems.push(item);
     }
 
