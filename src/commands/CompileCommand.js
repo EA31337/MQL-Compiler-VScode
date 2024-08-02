@@ -2,7 +2,11 @@ const vscode = require('vscode');
 
 const pathModule = require('path');
 
+// MQL file include helpers.
 const includes = require('../includes');
+
+// Debug system and overridable configuration.
+const debug = require('../debug');
 
 // Extension configuration.
 const config = require('../config');
@@ -10,11 +14,13 @@ const config = require('../config');
 // Console output.
 const output = require('../output');
 
-const files = require('../files');
+// Workspace helpers.
+const workspace = require('../workspace');
 
 // Executing .exe and wine processes.
 const childProcess = require('child_process');
 
+// Native file-system.
 const fs = require('fs');
 
 // Logging and VS Code warning/error/hint bubbles.
@@ -27,8 +33,11 @@ const diagnostics = require('../diagnostics');
  *
  * @param {boolean} mode 0 - Check syntax, 1 - Compile.
  */
-function CompileCommand(mode) {
+async function CompileCommand(mode) {
   const currentConfig = config.get();
+
+  console.log(debug.extensionDebugModeEnabled ? "Starting in debug mode..." : "Starting in release mode...");
+  console.log(debug.configOverrideEnabled ? "[Notice] Config override is enabled. This will probably change MT folders." : "Config override is disabled.");
 
   output.appendLine(`Compiling...`);
 
@@ -44,14 +53,17 @@ function CompileCommand(mode) {
 
   console.log(`Detected platform version ${platformVersion} for file "${filePath}".`);
 
-  console.log(currentConfig, config.platformExecutablePath(platformVersion), config.platformIncludePath(platformVersion));
+  console.log(`Extension configuration`, currentConfig);
 
   // Setting include path for C/C++ extension.
+  // @note Not needed as we have absolue paths in the log.
+  /*
   if (config.platformIncludePath(platformVersion).length > 0) {
     const platformIncludePath = config.platformIncludePath(platformVersion);
     includes.setPath(platformIncludePath);
-    files.addFolderToWorkspace(platformIncludePath);
+    await files.addFolderToWorkspace(platformIncludePath);
   }
+  */
 
   const exePath = `${config.platformExecutablePath(platformVersion)} `;
 
@@ -69,7 +81,7 @@ function CompileCommand(mode) {
         const platformExecutableName = pathModule.basename(config.platformExecutablePath(platformVersion)).toLowerCase();
         const platformExecutableFolder = pathModule.dirname(config.platformExecutablePath(platformVersion));
 
-        console.log(`Exe name: "${platformExecutableName}", folder: "${platformExecutableFolder}"`);
+        console.log(`Platform executable: "${platformExecutableName}", folder: "${platformExecutableFolder}"`);
 
         if (!(fs.existsSync(platformExecutableFolder) && (platformExecutableName === 'metaeditor.exe' || platformExecutableName === 'metaeditor64.exe'))) {
           return resolve(), output.appendLine(`[Error] Could not locate metaeditor executable file!`);
@@ -84,7 +96,7 @@ function CompileCommand(mode) {
         if (config.platformIncludePath(platformVersion).length > 0 && config.platformIncludePath(platformVersion).endsWith("/Include"))
           platformIncludePathBaseFolder = config.platformIncludePath(platformVersion).substring(0, config.platformIncludePath(platformVersion).length - 8);
 
-        console.log(`platformIncludePathBaseFolder: ${platformIncludePathBaseFolder}`);
+        console.log(`Platform include path: ${platformIncludePathBaseFolder}`);
 
         if (platformIncludePathBaseFolder.length > 0) {
           if (!fs.existsSync(platformIncludePathBaseFolder)) {
@@ -107,46 +119,41 @@ function CompileCommand(mode) {
           cliLog = filePath.replace(fileInfo.fileName, fileInfo.fileName.match(/.+(?=\.)/) + '.log');
         }
 
+        // The command we'll execute in order to compile current file.
         let command = `"${config.platformExecutablePath(platformVersion)}" /compile:"${filePath}"${cliInclude}${mode == 1 ? '' : ' /s'} /log:"${cliLog}"`;
 
         output.appendLine(`$ ${command}`);
 
         childProcess.exec(command, async (err, stdout, stderror) => {
-
           if (stderror) {
             return resolve(), outputChannel.appendLine(`[Error] Compilation failed!`);
           }
 
           try {
-            let data = fs.readFileSync(cliLog, 'ucs-2');
+            // Reading log file.
+            const logContent = fs.readFileSync(cliLog, 'ucs-2');
 
-            data = log.replaceLog(data, mode == 1);
+            // We don't need full log to be presented to user.
+            const humanFriendlyLogContent = log.replaceLog(logContent, mode == 1);
 
-            var result = await mtlog.parse(data, platformVersion);
+            // Collecting log information.
+            var result = await mtlog.parse(logContent, platformVersion);
 
+            // Clearing hints.
             diagnostics.clear();
             diagnostics.set(result.diagnostics);
 
-
+            output.append(humanFriendlyLogContent);
           } catch (e) {
             return vscode.window.showErrorMessage(`Error: ${e}`), resolve();
           }
 
-
-          /*
-          config.LogFile.DeleteLog && fs.unlink(cliLog, (err) => {
-                  err && vscode.window.showErrorMessage(lg['err_remove_log']);
-              });
-
-          switch (rt) {
-              case 0: log = replaceLog(data, false); outputChannel.appendLine(String(log.text)); resolve(); break;
-              case 1: log = replaceLog(data, true); outputChannel.appendLine(String(log.text)); resolve(); break;
-              case 2: log = cme ? replaceLog(data, true) : replaceLog(data, false); break;
+          if (currentConfig.MTE.RemoveLog) {
+            // Removing log file.
+            fs.unlink(cliLog, (err) => {
+              err && vscode.window.showErrorMessage(`Cannot remove log file!`);
+            });
           }
-
-          */
-
-          const end = new Date;
 
           resolve();
         });

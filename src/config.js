@@ -1,18 +1,17 @@
 const vscode = require('vscode');
 const debug = require('./debug');
 
+/**
+ * Retrieves current state of extension's config.
+ */
 function get() {
-  let config = debug.disabled ? vscode.workspace.getConfiguration('mql_compiler') : {
-    // Setting local paths. For debugging only.
-    MTE: {
-      MetaEditor5Path: "c:/Program Files/MetaTrader 5/MetaEditor64.exe",
-      IncludePath5: "c:/Users/MX/AppData/Roaming/MetaQuotes/Terminal/D0E8209F77C8CF37AD8BF550E51FF075/MQL5/Include"
-    }
-  };
-
-  return config;
+  return debug.configOverrideEnabled ? debug.configOverride : vscode.workspace.getConfiguration('mql_compiler');
 }
 
+/**
+ * Retrieves compiler's path for the given platform version.
+ * @param {number} platformVersion Version of the platform, e.g., 4 or 5.
+ */
 function platformExecutablePath(platformVersion) {
   const config = get();
   switch (platformVersion) {
@@ -25,6 +24,10 @@ function platformExecutablePath(platformVersion) {
   }
 }
 
+/**
+ * Retrieves compiler's include path for the given platform version.
+ * @param {number} platformVersion Version of the platform, e.g., 4 or 5.
+ */
 function platformIncludePath(platformVersion) {
   const config = get();
   switch (platformVersion) {

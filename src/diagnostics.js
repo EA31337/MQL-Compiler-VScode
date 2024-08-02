@@ -3,6 +3,7 @@ const vscode = require('vscode');
 const collection = vscode.languages.createDiagnosticCollection('mql_compiler');
 
 /**
+ * Sets a list of diagnostics (hints) per file URI.
  * @param {{[uri: string]: [{lineNo: number, startCol: number, endCol: number, message: string, severity: vscode.Diagnostic}]}} diagnosticsPerUri
  */
 function set(diagnosticsPerUri) {
@@ -22,6 +23,9 @@ function set(diagnosticsPerUri) {
   }
 }
 
+/**
+ * Clears all diagnostics (hints).
+ */
 function clear() {
   collection.clear();
 }

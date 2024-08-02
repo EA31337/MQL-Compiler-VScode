@@ -47,6 +47,10 @@ function getInfo(path) {
   };
 }
 
+/**
+ * Tries to detect plaform version required to compile given file.
+ * @returns E.g., 4, 5 or 0 in case of failure.
+ */
 function detectPlatformVersion(path) {
   const pathInfo = getInfo(path);
   // For .mqh files we need to detect whether we're working in MQL4 or MQL5 mode.
@@ -84,7 +88,7 @@ function getPaths(platformVersion) {
 
 /**
  * Changes include path for C/C++ extension.
- * @param {string} newPath
+ * @fixit Should use local settings file if possible.
  */
 function setPath(newPath) {
   // @fixit. We'd like to use .vscode/c_cpp_properties.json file and create it if necessary.
@@ -130,6 +134,9 @@ function setPath(newPath) {
   }
 }
 
+/**
+ * Changes global include path for C/C++ extension.
+ */
 const setGlobalPath = async (newPath) => {
   const cppConfig = vscode.workspace.getConfiguration('C_Cpp');
   let existingIncludePath = cppConfig.get('default.includePath') || [];
