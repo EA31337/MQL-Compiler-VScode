@@ -11,46 +11,51 @@
   "description": "MQL Compiler for VSCode",
   "main": "src/index.js",
   "activationEvents": [
-    "onCommand:mql_compiler.checkSyntax",
-    "onCommand:mql_compiler.compileFile",
     "onLanguage:cpp"
+  ],
+  "extensionDependencies": [
+    "ms-vscode.cpptools"
   ],
   "contributes": {
     "commands": [
       {
         "command": "mql_compiler.checkSyntax",
-        "icon": {
-          "dark": "$(check)",
-          "light": "$(check)"
-        },
-        "title": "%mql_compiler.commands.checkSyntax.title%"
+        "title": "%mql_compiler.commands.checkSyntax.title%",
+				"icon": "$(check)"
       },
       {
         "command": "mql_compiler.compileFile",
-        "icon": {
-          "dark": "$(play)",
-          "light": "$(play)"
-        },
-        "title": "%mql_compiler.commands.compileFile.title%"
+        "title": "%mql_compiler.commands.compileFile.title%",
+				"icon": "$(play)"
       }
     ],
     "configuration": {
       "title": "MQL Compiler",
       "properties": {
-        "mql_compiler.MTE.IncludePath": {
-          "type": "string",
-          "default": "",
-          "description": "%mql_compiler.configuration.IncludePath.description%"
-        },
         "mql_compiler.MTE.MetaEditor4Path": {
           "type": "string",
           "default": "",
           "description": "%mql_compiler.configuration.MetaEditor4Path.description%"
         },
+        "mql_compiler.MTE.IncludePath4": {
+          "type": "string",
+          "default": "",
+          "description": "%mql_compiler.configuration.IncludePath4.description%"
+        },
         "mql_compiler.MTE.MetaEditor5Path": {
           "type": "string",
           "default": "",
           "description": "%mql_compiler.configuration.MetaEditor5Path.description%"
+        },
+        "mql_compiler.MTE.IncludePath5": {
+          "type": "string",
+          "default": "",
+          "description": "%mql_compiler.configuration.IncludePath5.description%"
+        },
+        "mql_compiler.MTE.RemoveLog": {
+          "type": "boolean",
+          "default": false,
+          "description": "%mql_compiler.configuration.RemoveLog.description%"
         }
       }
     },
