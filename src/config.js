@@ -42,6 +42,7 @@ function platformIncludePath(platformVersion) {
 
 module.exports = {
   get,
+  get current() { return get(); },
   platformExecutablePath,
   platformIncludePath
 };

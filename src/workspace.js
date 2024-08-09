@@ -28,23 +28,22 @@ async function addFolderToWorkspace(folderPath) {
   const uri = vscode.Uri.file(folderPath);
   const workspaceFolder = { uri, name: uri.fsPath, index: 0 };
   return new Promise((resolve, reject) => {
-      // Set up the event listener for workspace folder changes
-      const disposable = vscode.workspace.onDidChangeWorkspaceFolders(event => {
-          disposable.dispose(); // Clean up the listener after the event is handled.
-          resolve(event); // Resolve the promise when the event is fired.
-      });
+    // Set up the event listener for workspace folder changes
+    const disposable = vscode.workspace.onDidChangeWorkspaceFolders(event => {
+      disposable.dispose(); // Clean up the listener after the event is handled.
+      resolve(event); // Resolve the promise when the event is fired.
+    });
 
-      // Update workspace folders.
-      if (!vscode.workspace.updateWorkspaceFolders(
-          vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders.length : 0,
-          null,
-          workspaceFolder
-      ))
-      {
-        // onDidChangeWorkspaceFolders() won't be called.
-        console.log(`[Error] Adding folder "${uri}" failed.`);
-        resolve();
-      }
+    // Update workspace folders.
+    if (!vscode.workspace.updateWorkspaceFolders(
+      vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders.length : 0,
+      null,
+      workspaceFolder
+    )) {
+      // onDidChangeWorkspaceFolders() won't be called.
+      console.log(`[Error] Adding folder "${uri}" failed.`);
+      resolve();
+    }
   });
 }
 
