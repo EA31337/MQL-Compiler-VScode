@@ -56,6 +56,11 @@
           "type": "boolean",
           "default": false,
           "description": "%mql_compiler.configuration.RemoveLog.description%"
+        },
+        "mql_compiler.MTE.PassThroughWSL": {
+          "type": "boolean",
+          "default": false,
+          "description": "%mql_compiler.configuration.PassThroughWSL.description%"
         }
       }
     },

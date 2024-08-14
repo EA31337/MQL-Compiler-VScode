@@ -20,6 +20,12 @@ const workspace = require('../workspace');
 // Executing .exe and wine processes.
 const childProcess = require('child_process');
 
+// Wine-related helpers.
+const wine = require('../wine');
+
+// WSL-related helpers.
+const wsl = require('../wsl');
+
 // Native file-system.
 const fs = require('fs');
 
@@ -34,6 +40,10 @@ const diagnostics = require('../diagnostics');
  * @param {boolean} mode 0 - Check syntax, 1 - Compile.
  */
 async function CompileCommand(mode) {
+
+  if (!wine.installed) {
+  }
+
   const currentConfig = config.get();
 
   console.log(debug.extensionDebugModeEnabled ? "Starting in debug mode..." : "Starting in release mode...");
@@ -56,14 +66,10 @@ async function CompileCommand(mode) {
   console.log(`Extension configuration`, currentConfig);
 
   // Setting include path for C/C++ extension.
-  // @note Not needed as we have absolue paths in the log.
-  /*
   if (config.platformIncludePath(platformVersion).length > 0) {
     const platformIncludePath = config.platformIncludePath(platformVersion);
     includes.setPath(platformIncludePath);
-    await files.addFolderToWorkspace(platformIncludePath);
   }
-  */
 
   const exePath = `${config.platformExecutablePath(platformVersion)} `;
 
@@ -78,23 +84,35 @@ async function CompileCommand(mode) {
         output.show(true);
         output.appendLine(`[Starting compilation] >>> ${fileInfo.fileName} <<<`);
 
-        const platformExecutableName = pathModule.basename(config.platformExecutablePath(platformVersion)).toLowerCase();
-        const platformExecutableFolder = pathModule.dirname(config.platformExecutablePath(platformVersion));
+        let platformExecutablePath = config.platformExecutablePath(platformVersion);
+
+        // Converting to target platform path.
+        platformExecutablePath = wine.targetPlatformPathOf(platformExecutablePath);
+
+        const platformExecutableName = pathModule.basename(platformExecutablePath).toLowerCase();
+        const platformExecutableFolder = pathModule.dirname(platformExecutablePath);
 
         console.log(`Platform executable: "${platformExecutableName}", folder: "${platformExecutableFolder}"`);
 
-        if (!(fs.existsSync(platformExecutableFolder) && (platformExecutableName === 'metaeditor.exe' || platformExecutableName === 'metaeditor64.exe'))) {
-          return resolve(), output.appendLine(`[Error] Could not locate metaeditor executable file!`);
-        }
+        // @fixit Check for folder and file existence.
+        //
+        // if (!(fs.existsSync(platformExecutableFolder) && (platformExecutableName === 'metaeditor.exe' || platformExecutableName === 'metaeditor64.exe'))) {
+        //   output.appendLine(`[Error] Could not locate metaeditor executable file!`);
+        //   resolve();
+        //   return;
+        // }
 
         let cliInclude;
-        let cliLog;
+        let logPath;
         let logDir = '';
 
         let platformIncludePathBaseFolder = '';
 
         if (config.platformIncludePath(platformVersion).length > 0 && config.platformIncludePath(platformVersion).endsWith("/Include"))
           platformIncludePathBaseFolder = config.platformIncludePath(platformVersion).substring(0, config.platformIncludePath(platformVersion).length - 8);
+
+        // We want include path to be Windows-specific.
+        platformIncludePathBaseFolder = wine.windowsSlashedPathOf(platformIncludePathBaseFolder);
 
         console.log(`Platform include path: ${platformIncludePathBaseFolder}`);
 
@@ -111,27 +129,46 @@ async function CompileCommand(mode) {
 
         if (logDir.length) {
           if (pathModule.extname(logDir) === '.log') {
-            cliLog = path.replace(fileInfo.fileName, logDir);
+            logPath = path.replace(fileInfo.fileName, logDir);
           } else {
-            cliLog = path.replace(fileInfo.fileName, logDir + '.log');
+            logPath = path.replace(fileInfo.fileName, logDir + '.log');
           }
         } else {
-          cliLog = filePath.replace(fileInfo.fileName, fileInfo.fileName.match(/.+(?=\.)/) + '.log');
+          logPath = filePath.replace(fileInfo.fileName, fileInfo.fileName.match(/.+(?=\.)/) + '.log');
         }
 
+        const windowsFilePath = wine.windowsSlashedPathOf(filePath);
+        const windowsLogPath = wine.windowsSlashedPathOf(logPath);
+
         // The command we'll execute in order to compile current file.
-        let command = `"${config.platformExecutablePath(platformVersion)}" /compile:"${filePath}"${cliInclude}${mode == 1 ? '' : ' /s'} /log:"${cliLog}"`;
+        const platformSpecificExecutable = wine.targetPlatformPathOf(config.platformExecutablePath(platformVersion));
+
+        let command = `"${platformSpecificExecutable}" /compile:"${windowsFilePath}"${cliInclude}${mode == 1 ? '' : ' /s'} /log:"${windowsLogPath}"`;
+
+        console.log(`Command 1: ${command}`);
+
+        // On non-Windows plaforms or if user ticked "Pass command through WSL (only for Windows platform)." then we run command through wine.
+        command = wine.passThroughWineMaybe(platformVersion, command);
+
+        console.log(`Command 2: ${command}`);
+
+        // If on Windows platform and user ticked "Pass command through WSL (only for Windows platform)." then command will be executed on WSL.
+        command = wsl.passThroughWslMaybe(command);
+
+        console.log(`Command 3: ${command}`);
 
         output.appendLine(`$ ${command}`);
 
-        childProcess.exec(command, async (err, stdout, stderror) => {
-          if (stderror) {
-            return resolve(), outputChannel.appendLine(`[Error] Compilation failed!`);
+        childProcess.exec(command, async (err, stdout, stderr) => {
+          if (stderr) {
+            resolve();
+            output.appendLine(`[Error] Compilation failed!\n\nLog from stderr:\n${stderr}\n\nLog from stdout:\n${stdout}`);
+            return;
           }
 
           try {
             // Reading log file.
-            const logContent = fs.readFileSync(cliLog, 'ucs-2');
+            const logContent = fs.readFileSync(logPath, 'ucs-2');
 
             // We don't need full log to be presented to user.
             const humanFriendlyLogContent = log.replaceLog(logContent, mode == 1);
@@ -150,7 +187,7 @@ async function CompileCommand(mode) {
 
           if (currentConfig.MTE.RemoveLog) {
             // Removing log file.
-            fs.unlink(cliLog, (err) => {
+            fs.unlink(logPath, (err) => {
               err && vscode.window.showErrorMessage(`Cannot remove log file!`);
             });
           }

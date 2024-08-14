@@ -91,47 +91,7 @@ function getPaths(platformVersion) {
  * @fixit Should use local settings file if possible.
  */
 function setPath(newPath) {
-  // @fixit. We'd like to use .vscode/c_cpp_properties.json file and create it if necessary.
-  const forceGlobalConfig = true;
-  const workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!workspaceFolders || forceGlobalConfig) {
-    setGlobalPath(newPath);
-    return;
-  }
-
-  const cppPropertiesPath = pathModule.join(workspaceFolders[0].uri.fsPath, '.vscode', 'c_cpp_properties.json');
-
-  try {
-    // Read the existing c_cpp_properties.json file.
-    const data = fs.readFileSync(cppPropertiesPath, 'utf8');
-    const config = JSON.parse(data);
-
-    // Ensure the configurations array exists.
-    if (!Array.isArray(config.configurations)) {
-      config.configurations = [];
-    }
-
-    // Add the new include path to each configuration.
-    for (const configuration of config.configurations) {
-      if (!Array.isArray(configuration.includePath)) {
-        configuration.includePath = [];
-      }
-
-      if (!configuration.includePath.includes(newPath)) {
-        configuration.includePath.push(newPath);
-      }
-    }
-
-    // Write the updated configuration back to c_cpp_properties.json.
-    fs.writeFileSync(cppPropertiesPath, JSON.stringify(config, null, 4), 'utf8');
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      vscode.window.showErrorMessage(`c_cpp_properties.json not found while trying to update C/C++ extension's include path.`);
-    } else {
-      vscode.window.showErrorMessage(`Failed to update C/C++ extension's include path.`);
-      console.error(err);
-    }
-  }
+  setGlobalPath(newPath);
 }
 
 /**
@@ -139,12 +99,16 @@ function setPath(newPath) {
  */
 const setGlobalPath = async (newPath) => {
   const cppConfig = vscode.workspace.getConfiguration('C_Cpp');
+
+  console.log(`Current cppConfig`, cppConfig);
+
   let existingIncludePath = cppConfig.get('default.includePath') || [];
 
   if (!existingIncludePath.includes(newPath)) {
     existingIncludePath.push(newPath);
-    await cppConfig.update('default.includePath', existingIncludePath, vscode.ConfigurationTarget.Global);
   }
+
+  await cppConfig.update('default.includePath', existingIncludePath);
 };
 
 module.exports = {
