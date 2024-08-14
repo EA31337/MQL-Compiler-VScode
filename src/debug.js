@@ -19,7 +19,7 @@ module.exports = {
       MetaEditor5Path: "c:/Program Files/MetaTrader 5/MetaEditor64.exe",
       IncludePath5: "c:/Users/MX/AppData/Roaming/MetaQuotes/Terminal/D0E8209F77C8CF37AD8BF550E51FF075/MQL5/Include",
       RemoveLog: false,
-      PassThroughWSL: true
+      PassThroughWSL: false
     }
   },
 

@@ -1,4 +1,16 @@
+const childProcess = require('child_process');
+
 const config = require('./config');
+
+// Command -> result cache.
+const commandCache = {};
+
+function execCached(command) {
+  if (commandCache[command] != undefined)
+    return commandCache[command];
+
+  return commandCache[command] = childProcess.execSync(command);
+}
 
 /**
  * If called on Windows and user ticked "Pass command through WSL (only for Windows platform)." then "wsl.exe" will be
@@ -7,12 +19,12 @@ const config = require('./config');
  */
 function passThroughWslMaybe(command) {
   if (config.current.MTE.PassThroughWSL && process.platform == 'win32')
-    return 'wsl.exe ' + command;
+    command = 'wsl.exe ' + command;
 
-  // On non-Windows platforms we just skip WSL part.
   return command;
 }
 
 module.exports = {
+  execCached,
   passThroughWslMaybe
 };
