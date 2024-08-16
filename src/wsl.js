@@ -1,16 +1,11 @@
-const childProcess = require('child_process');
-
 const config = require('./config');
 
-// Command -> result cache.
-const commandCache = {};
-
-function execCached(command) {
-  if (commandCache[command] != undefined)
-    return commandCache[command];
-
-  return commandCache[command] = childProcess.execSync(command);
-}
+const wslOptions = {
+  env: {
+    ...process.env,
+    WINEDEBUG: '-all'
+  }
+};
 
 /**
  * If called on Windows and user ticked "Pass command through WSL (only for Windows platform)." then "wsl.exe" will be
@@ -25,6 +20,6 @@ function passThroughWslMaybe(command) {
 }
 
 module.exports = {
-  execCached,
+  wslOptions,
   passThroughWslMaybe
 };

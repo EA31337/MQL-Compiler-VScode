@@ -2,6 +2,7 @@ const vscode = require('vscode');
 const fs = require('fs');
 const pathModule = require('path');
 const config = require('./config');
+const paths = require('./paths');
 
 /**
  * Returns URI for the given path. Path could be either relative to the include path or current file's folder.
@@ -34,25 +35,11 @@ function getUri(path, platformVersion) {
 }
 
 /**
- * Tries to detect MQL version from the file path given. Returns number, either 4 or 5.
- * @param {string} path
- */
-function getInfo(path) {
-  const fileName = pathModule.basename(path);
-  const fileExtension = pathModule.extname(path).toLowerCase();
-
-  return {
-    fileName,
-    fileExtension
-  };
-}
-
-/**
  * Tries to detect plaform version required to compile given file.
  * @returns E.g., 4, 5 or 0 in case of failure.
  */
 function detectPlatformVersion(path) {
-  const pathInfo = getInfo(path);
+  const pathInfo = paths.getFileInfo(path);
   // For .mqh files we need to detect whether we're working in MQL4 or MQL5 mode.
   const platformDetectedMQL4 = vscode.workspace.name?.includes('MQL4');
   const usePlatform4 = pathInfo.fileExtension === '.mq4' || pathInfo.fileExtension === '.mqh' && platformDetectedMQL4;
@@ -114,7 +101,6 @@ const setGlobalPath = async (newPath) => {
 module.exports = {
   setPath,
   getUri,
-  getInfo,
   detectPlatformVersion,
   getPaths
 };
