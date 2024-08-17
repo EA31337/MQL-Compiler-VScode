@@ -1,7 +1,9 @@
 const vscode = require('vscode');
 const output = require('./output');
 const includes = require('./includes');
-const files = require('./workspace');
+const workspace = require('./workspace');
+const wine = require('./wine');
+const { UniversalPath } = require('./universalpath');
 
 const reFileNameOnly = /^DISABLEDX$/i;
 const reErrorOrWarning = /(^.*?)\((\d+),(\d+)\) : (error|warning) \d+: (.*?)$/;
@@ -41,7 +43,7 @@ async function parse(content, platformVersion) {
       const startCol = parseInt(isErrorOrWarning[3]) - 1;
       const endCol = startCol + 1000;
       const severity = isError ? vscode.DiagnosticSeverity.Error : vscode.DiagnosticSeverity.Warning;
-      const uri = vscode.Uri.file(filePath);
+      const uri = vscode.Uri.file(new UniversalPath(filePath).asTargetPath());
 
       if (!result.diagnostics[uri])
         result.diagnostics[uri] = [];

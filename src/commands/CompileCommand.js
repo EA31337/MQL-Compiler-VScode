@@ -26,6 +26,10 @@ const wine = require('../wine');
 // WSL-related helpers.
 const wsl = require('../wsl');
 
+// Windows/Unix/Wine path-related helpers.
+const paths = require('../paths');
+const { UniversalPath } = require('../universalpath');
+
 // Native file-system.
 const fs = require('fs');
 
@@ -58,7 +62,7 @@ async function CompileCommand(mode) {
 
   output.appendLine(`Compiling file ${filePath}...`);
 
-  const fileInfo = includes.getInfo(filePath);
+  const fileInfo = paths.getFileInfo(filePath);
   const platformVersion = includes.detectPlatformVersion(filePath);
 
   console.log(`Detected platform version ${platformVersion} for file "${filePath}".`);
@@ -87,7 +91,7 @@ async function CompileCommand(mode) {
         let platformExecutablePath = config.platformExecutablePath(platformVersion);
 
         // Converting to target platform path.
-        platformExecutablePath = wine.targetPlatformPathOf(platformExecutablePath);
+        platformExecutablePath = new UniversalPath(platformExecutablePath).asTargetPath();
 
         const platformExecutableName = pathModule.basename(platformExecutablePath).toLowerCase();
         const platformExecutableFolder = pathModule.dirname(platformExecutablePath);
@@ -112,12 +116,12 @@ async function CompileCommand(mode) {
           platformIncludePathBaseFolder = config.platformIncludePath(platformVersion).substring(0, config.platformIncludePath(platformVersion).length - 8);
 
         // We want include path to be Windows-specific.
-        platformIncludePathBaseFolder = wine.windowsSlashedPathOf(platformIncludePathBaseFolder);
+        platformIncludePathBaseFolder = new UniversalPath(platformIncludePathBaseFolder).asCliPath();
 
         console.log(`Platform include path: ${platformIncludePathBaseFolder}`);
 
         if (platformIncludePathBaseFolder.length > 0) {
-          if (!fs.existsSync(platformIncludePathBaseFolder)) {
+          if (false && !fs.existsSync(platformIncludePathBaseFolder)) {
             return resolve(), output.appendLine(`[Error] Passed include path (base folder) "${platformIncludePathBaseFolder}" doesn't exist!`);
           } else {
             cliInclude = ` /include:"${platformIncludePathBaseFolder}"`;
@@ -126,6 +130,8 @@ async function CompileCommand(mode) {
         } else {
           cliInclude = '';
         }
+
+        /*
 
         if (logDir.length) {
           if (pathModule.extname(logDir) === '.log') {
@@ -137,13 +143,23 @@ async function CompileCommand(mode) {
           logPath = filePath.replace(fileInfo.fileName, fileInfo.fileName.match(/.+(?=\.)/) + '.log');
         }
 
-        const windowsFilePath = wine.windowsSlashedPathOf(filePath);
-        const windowsLogPath = wine.windowsSlashedPathOf(logPath);
+        */
+
+        logPath = filePath.replace(fileInfo.fileName, fileInfo.fileName.match(/.+(?=\.)/) + '.log');
+
+        //const windowsFilePath = wine.windowsSlashedPathOf(filePath);
+        //const windowsLogPath = wine.windowsSlashedPathOf(logPath);
+
+        const fileToCompileCliPath = new UniversalPath(filePath);
+        const fileToCompileLogCliPath = fileToCompileCliPath.cloneWithExtension('log');
+
+        console.log(`fileToCompileCliPath = `, fileToCompileCliPath.toString());
+        console.log(`fileToCompileLogCliPath = `, fileToCompileLogCliPath.toString());
 
         // The command we'll execute in order to compile current file.
-        const platformSpecificExecutable = wine.targetPlatformPathOf(config.platformExecutablePath(platformVersion));
+        const platformSpecificExecutable = new UniversalPath(config.platformExecutablePath(platformVersion)).asTargetPath();
 
-        let command = `"${platformSpecificExecutable}" /compile:"${windowsFilePath}"${cliInclude}${mode == 1 ? '' : ' /s'} /log:"${windowsLogPath}"`;
+        let command = `"${platformSpecificExecutable}" /compile:"${fileToCompileCliPath.asCliPath()}"${cliInclude}${mode == 1 ? '' : ' /s'} /log:"${fileToCompileLogCliPath.asCliPath()}"`;
 
         console.log(`Command 1: ${command}`);
 
@@ -159,8 +175,8 @@ async function CompileCommand(mode) {
 
         output.appendLine(`$ ${command}`);
 
-        childProcess.exec(command, async (err, stdout, stderr) => {
-          if (stderr) {
+        childProcess.exec(command, wine.wslOptions, async (err, stdout, stderr) => {
+          if (stderr && false) {
             resolve();
             output.appendLine(`[Error] Compilation failed!\n\nLog from stderr:\n${stderr}\n\nLog from stdout:\n${stdout}`);
             return;
@@ -179,6 +195,8 @@ async function CompileCommand(mode) {
             // Clearing hints.
             diagnostics.clear();
             diagnostics.set(result.diagnostics);
+
+            console.log('diagnostics', result.diagnostics);
 
             output.append(humanFriendlyLogContent);
           } catch (e) {

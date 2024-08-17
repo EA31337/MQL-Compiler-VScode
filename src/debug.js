@@ -4,8 +4,8 @@ module.exports = {
   // You may force debug logging via switching this to true.
   forceEnable: false,
 
-  // Whether we want to override MT folders to the ones in "config".
-  overrideConfig: false,
+  // Whether we want to override extension settings to the ones in "configOverride".
+  overrideConfig: true,
 
   // Whether we want to enable debug logging.
   get enabled() { return this.extensionDebugModeEnabled || this.forceEnable; },
