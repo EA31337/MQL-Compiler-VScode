@@ -13,6 +13,14 @@ npm run package
 
 This will generate a .vsix file which can be install from the editor.
 
+## Debug
+
+To debug this extension, open repository location in editor,
+then from _Run_ menu select _Start Debugging_.
+This will open a new editor window with extension being enabled
+where you can open another folder with MQL files to compile.
+To see debug messages, go to Help menu and select _Toggle Developer Tools_.
+
 ## Install from file
 
 In VS Code editor, open extension pane and choose "Install from VSIX...",
