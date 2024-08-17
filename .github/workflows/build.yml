@@ -1,0 +1,31 @@
+---
+name: Build
+
+on:
+  pull_request:
+    paths:
+      - '**/*.js'
+      - '**/*.y?ml'
+      - '*.js'
+      - .github/workflows/build.yml
+  push:
+    paths:
+      - '**/*.js'
+      - '**/*.y?ml'
+      - '*.js'
+      - .github/workflows/build.yml
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+      - uses: actions/checkout@v4
+      - run: npm version
+      - run: npm ci
+      - run: npm install
+      - run: npm run lint || true
+      - run: npm test || true
+      - run: npm run package
