@@ -11,7 +11,8 @@ logs
 # Temporary files.
 .*.swp
 
-# VS Code files for those working on multiple tools
+# VS Code files for those working on multiple tools.
+.anima
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
