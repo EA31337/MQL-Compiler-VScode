@@ -4,5 +4,7 @@
   "mql_compiler.configuration.IncludePath4.description": "(optional) Path to MetaEditor 4 include directory",
   "mql_compiler.configuration.IncludePath5.description": "(optional) Path to MetaEditor 5 include directory",
   "mql_compiler.configuration.MetaEditor4Path.description": "Path to MetaEditor 4 (e.g. /Path/MT4/metaeditor.exe)",
-  "mql_compiler.configuration.MetaEditor5Path.description": "Path to MetaEditor 5 (e.g. /Path/MT5/metaeditor64.exe)"
+  "mql_compiler.configuration.MetaEditor5Path.description": "Path to MetaEditor 5 (e.g. /Path/MT5/metaeditor64.exe)",
+  "mql_compiler.configuration.RemoveLog.description": "Remove log file after check/compile action.",
+  "mql_compiler.configuration.PassThroughWSL.description": "Pass command through WSL (only for Windows platform)."
 }

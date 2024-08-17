@@ -2,6 +2,7 @@ const vscode = require('vscode');
 const fs = require('fs');
 const pathModule = require('path');
 const config = require('./config');
+const paths = require('./paths');
 
 /**
  * Returns URI for the given path. Path could be either relative to the include path or current file's folder.
@@ -34,21 +35,11 @@ function getUri(path, platformVersion) {
 }
 
 /**
- * Tries to detect MQL version from the file path given. Returns number, either 4 or 5.
- * @param {string} path
+ * Tries to detect plaform version required to compile given file.
+ * @returns E.g., 4, 5 or 0 in case of failure.
  */
-function getInfo(path) {
-  const fileName = pathModule.basename(path);
-  const fileExtension = pathModule.extname(path).toLowerCase();
-
-  return {
-    fileName,
-    fileExtension
-  };
-}
-
 function detectPlatformVersion(path) {
-  const pathInfo = getInfo(path);
+  const pathInfo = paths.getFileInfo(path);
   // For .mqh files we need to detect whether we're working in MQL4 or MQL5 mode.
   const platformDetectedMQL4 = vscode.workspace.name?.includes('MQL4');
   const usePlatform4 = pathInfo.fileExtension === '.mq4' || pathInfo.fileExtension === '.mqh' && platformDetectedMQL4;
@@ -84,66 +75,32 @@ function getPaths(platformVersion) {
 
 /**
  * Changes include path for C/C++ extension.
- * @param {string} newPath
+ * @fixit Should use local settings file if possible.
  */
 function setPath(newPath) {
-  // @fixit. We'd like to use .vscode/c_cpp_properties.json file and create it if necessary.
-  const forceGlobalConfig = true;
-  const workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!workspaceFolders || forceGlobalConfig) {
-    setGlobalPath(newPath);
-    return;
-  }
-
-  const cppPropertiesPath = pathModule.join(workspaceFolders[0].uri.fsPath, '.vscode', 'c_cpp_properties.json');
-
-  try {
-    // Read the existing c_cpp_properties.json file.
-    const data = fs.readFileSync(cppPropertiesPath, 'utf8');
-    const config = JSON.parse(data);
-
-    // Ensure the configurations array exists.
-    if (!Array.isArray(config.configurations)) {
-      config.configurations = [];
-    }
-
-    // Add the new include path to each configuration.
-    for (const configuration of config.configurations) {
-      if (!Array.isArray(configuration.includePath)) {
-        configuration.includePath = [];
-      }
-
-      if (!configuration.includePath.includes(newPath)) {
-        configuration.includePath.push(newPath);
-      }
-    }
-
-    // Write the updated configuration back to c_cpp_properties.json.
-    fs.writeFileSync(cppPropertiesPath, JSON.stringify(config, null, 4), 'utf8');
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      vscode.window.showErrorMessage(`c_cpp_properties.json not found while trying to update C/C++ extension's include path.`);
-    } else {
-      vscode.window.showErrorMessage(`Failed to update C/C++ extension's include path.`);
-      console.error(err);
-    }
-  }
+  setGlobalPath(newPath);
 }
 
+/**
+ * Changes global include path for C/C++ extension.
+ */
 const setGlobalPath = async (newPath) => {
   const cppConfig = vscode.workspace.getConfiguration('C_Cpp');
+
+  console.log(`Current cppConfig`, cppConfig);
+
   let existingIncludePath = cppConfig.get('default.includePath') || [];
 
   if (!existingIncludePath.includes(newPath)) {
     existingIncludePath.push(newPath);
-    await cppConfig.update('default.includePath', existingIncludePath, vscode.ConfigurationTarget.Global);
   }
+
+  await cppConfig.update('default.includePath', existingIncludePath);
 };
 
 module.exports = {
   setPath,
   getUri,
-  getInfo,
   detectPlatformVersion,
   getPaths
 };

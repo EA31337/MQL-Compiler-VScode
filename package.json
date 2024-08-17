@@ -50,7 +50,17 @@
         "mql_compiler.MTE.IncludePath5": {
           "type": "string",
           "default": "",
-          "description": "%mql_compiler.configuration.IncludePath4.description%"
+          "description": "%mql_compiler.configuration.IncludePath5.description%"
+        },
+        "mql_compiler.MTE.RemoveLog": {
+          "type": "boolean",
+          "default": false,
+          "description": "%mql_compiler.configuration.RemoveLog.description%"
+        },
+        "mql_compiler.MTE.PassThroughWSL": {
+          "type": "boolean",
+          "default": false,
+          "description": "%mql_compiler.configuration.PassThroughWSL.description%"
         }
       }
     },

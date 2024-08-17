@@ -1,19 +1,18 @@
 const vscode = require('vscode');
 const output = require('./output');
 const includes = require('./includes');
-const files = require('./files');
+const workspace = require('./workspace');
+const wine = require('./wine');
+const { UniversalPath } = require('./universalpath');
 
-const reFileNameOnly = /^'(.*?(\.mq4|\.mq5|\.mqh|\.cpp|\.h))'$/i;
-const reErrorOrWarning = /^(error : |warning : )(.*?) \((\d+),(\d+)\)$/;
+const reFileNameOnly = /^DISABLEDX$/i;
+const reErrorOrWarning = /(^.*?)\((\d+),(\d+)\) : (error|warning) \d+: (.*?)$/;
 
 /**
  * Parses log and builds information about warning, errors and other important information.
- *
  * @param {string} content
  */
 async function parse(content, platformVersion) {
-  output.append(content);
-
   // Firstly, we split content into lines. We will be checking one line at a time.
   lines = content.split(/\r?\n|\r/);
 
@@ -29,7 +28,6 @@ async function parse(content, platformVersion) {
 
     if (isFileNameOnly) {
       currentFile = isFileNameOnly[1];
-      console.log(`Switching file to "${currentFile}".`);
       continue;
     }
 
@@ -38,13 +36,14 @@ async function parse(content, platformVersion) {
     if (isErrorOrWarning) {
       // We'll be adding diagnostics with related file URIs.
       console.log(isErrorOrWarning);
-      const isError = isErrorOrWarning[1] === 'error : ';
-      const message = isErrorOrWarning[2];
-      const lineNo = parseInt(isErrorOrWarning[3]) - 1;
-      const startCol = parseInt(isErrorOrWarning[4]) - 1;
+      const filePath = isErrorOrWarning[1];
+      const isError = isErrorOrWarning[4] === 'error';
+      const message = isErrorOrWarning[5];
+      const lineNo = parseInt(isErrorOrWarning[2]) - 1;
+      const startCol = parseInt(isErrorOrWarning[3]) - 1;
       const endCol = startCol + 1000;
       const severity = isError ? vscode.DiagnosticSeverity.Error : vscode.DiagnosticSeverity.Warning;
-      const uri = await files.searchFileAndGenerateUri(currentFile);
+      const uri = vscode.Uri.file(new UniversalPath(filePath).asTargetPath());
 
       if (!result.diagnostics[uri])
         result.diagnostics[uri] = [];
@@ -58,10 +57,6 @@ async function parse(content, platformVersion) {
       })
     }
   }
-
-  console.log(result);
-
-  console.log(lines);
 
   return result;
 }
