@@ -72,7 +72,7 @@ function CompileCommand(mode) {
         console.log(`Exe name: "${platformExecutableName}", folder: "${platformExecutableFolder}"`);
 
         if (!(fs.existsSync(platformExecutableFolder) && (platformExecutableName === 'metaeditor.exe' || platformExecutableName === 'metaeditor64.exe'))) {
-          return resolve(), output.appendLine(`[Error] Could not locate metaeditor executable file!`);
+          return resolve(), output.appendLine(`[Error] Could not locate MetaEditor executable file, please check settings!`);
         }
 
         let cliInclude;
