@@ -101,7 +101,7 @@ async function CompileCommand(mode) {
         // @fixit Check for folder and file existence.
         //
         // if (!(fs.existsSync(platformExecutableFolder) && (platformExecutableName === 'metaeditor.exe' || platformExecutableName === 'metaeditor64.exe'))) {
-        //   output.appendLine(`[Error] Could not locate metaeditor executable file!`);
+        //   output.appendLine(`[Error] Could not locate MetaEditor executable file, please check settings!`);
         //   resolve();
         //   return;
         // }

@@ -26,5 +26,3 @@ module.exports = {
   get extensionDebugModeEnabled() { return vscode.debug.activeDebugSession; },
   get disabled() { return !module.exports.enabled; }
 };
-
-
