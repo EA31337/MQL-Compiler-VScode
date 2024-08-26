@@ -37,20 +37,40 @@
           "default": "",
           "description": "%mql_compiler.configuration.MetaEditor4Path.description%"
         },
+        "mql_compiler.MTE.MetaEditor4PathIsWinePath": {
+          "type": "boolean",
+          "default": false,
+          "description": "%mql_compiler.configuration.MetaEditor4PathIsWinePath.description%"
+        },
         "mql_compiler.MTE.IncludePath4": {
           "type": "string",
           "default": "",
           "description": "%mql_compiler.configuration.IncludePath4.description%"
+        },
+        "mql_compiler.MTE.IncludePath4IsWinePath": {
+          "type": "boolean",
+          "default": false,
+          "description": "%mql_compiler.configuration.IncludePath4IsWinePath.description%"
         },
         "mql_compiler.MTE.MetaEditor5Path": {
           "type": "string",
           "default": "",
           "description": "%mql_compiler.configuration.MetaEditor5Path.description%"
         },
+        "mql_compiler.MTE.MetaEditor5PathIsWinePath": {
+          "type": "boolean",
+          "default": false,
+          "description": "%mql_compiler.configuration.MetaEditor5PathIsWinePath.description%"
+        },
         "mql_compiler.MTE.IncludePath5": {
           "type": "string",
           "default": "",
           "description": "%mql_compiler.configuration.IncludePath5.description%"
+        },
+        "mql_compiler.MTE.IncludePath5IsWinePath": {
+          "type": "boolean",
+          "default": false,
+          "description": "%mql_compiler.configuration.IncludePath5IsWinePath.description%"
         },
         "mql_compiler.MTE.RemoveLog": {
           "type": "boolean",

@@ -26,6 +26,6 @@ jobs:
       - run: npm version
       - run: npm ci
       - run: npm install
-      - run: npm run lint || true
+      - run: npm run lint
       - run: npm test || true
       - run: npm run package

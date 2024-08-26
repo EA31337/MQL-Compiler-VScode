@@ -14,9 +14,6 @@ const config = require('../config');
 // Console output.
 const output = require('../output');
 
-// Workspace helpers.
-const workspace = require('../workspace');
-
 // Executing .exe and wine processes.
 const childProcess = require('child_process');
 
@@ -44,11 +41,13 @@ const diagnostics = require('../diagnostics');
  * @param {boolean} mode 0 - Check syntax, 1 - Compile.
  */
 async function CompileCommand(mode) {
-
-  if (!wine.installed) {
-  }
-
   const currentConfig = config.get();
+
+  if (process.platform != 'win32' && !wine.installed) {
+    const errorText = `On non-Windows platforms wine is required in order to compile MetaTrader source files!`;
+    vscode.window.showErrorMessage(errorText);
+    throw new Error(errorText);
+  }
 
   console.log(debug.extensionDebugModeEnabled ? "Starting in debug mode..." : "Starting in release mode...");
   console.log(debug.configOverrideEnabled ? "[Notice] Config override is enabled. This will probably change MT folders." : "Config override is disabled.");
@@ -75,8 +74,6 @@ async function CompileCommand(mode) {
     includes.setPath(platformIncludePath);
   }
 
-  const exePath = `${config.platformExecutablePath(platformVersion)} `;
-
   vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Window,
@@ -88,13 +85,20 @@ async function CompileCommand(mode) {
         output.show(true);
         output.appendLine(`[Starting compilation] >>> ${fileInfo.fileName} <<<`);
 
-        let platformExecutablePath = config.platformExecutablePath(platformVersion);
+        let platformSpecificExecutablePath = config.platformExecutablePath(platformVersion);
+
+        if (platformSpecificExecutablePath === undefined || platformSpecificExecutablePath.length == 0) {
+          const errorText = `Missing platform executable path for metaeditor.exe version ${platformVersion}!`;
+          vscode.window.showErrorMessage(errorText);
+          throw new Error(errorText);
+        }
 
         // Converting to target platform path.
-        platformExecutablePath = new UniversalPath(platformExecutablePath).asTargetPath();
+        const platformSpecificExecutable = new UniversalPath(config.platformExecutablePath(platformVersion), config.platformExecutablePathIsWinePath(platformVersion));
+        platformSpecificExecutablePath = platformSpecificExecutable.asTargetPath();
 
-        const platformExecutableName = pathModule.basename(platformExecutablePath).toLowerCase();
-        const platformExecutableFolder = pathModule.dirname(platformExecutablePath);
+        const platformExecutableName = pathModule.basename(platformSpecificExecutablePath).toLowerCase();
+        const platformExecutableFolder = pathModule.dirname(platformSpecificExecutablePath);
 
         console.log(`Platform executable: "${platformExecutableName}", folder: "${platformExecutableFolder}"`);
 
@@ -108,7 +112,6 @@ async function CompileCommand(mode) {
 
         let cliInclude;
         let logPath;
-        let logDir = '';
 
         let platformIncludePathBaseFolder = '';
 
@@ -116,17 +119,12 @@ async function CompileCommand(mode) {
           platformIncludePathBaseFolder = config.platformIncludePath(platformVersion).substring(0, config.platformIncludePath(platformVersion).length - 8);
 
         // We want include path to be Windows-specific.
-        platformIncludePathBaseFolder = new UniversalPath(platformIncludePathBaseFolder).asCliPath();
+        platformIncludePathBaseFolder = new UniversalPath(platformIncludePathBaseFolder, config.platformIncludePathIsWinePath(platformVersion)).asCliPath();
 
         console.log(`Platform include path: ${platformIncludePathBaseFolder}`);
 
         if (platformIncludePathBaseFolder.length > 0) {
-          if (false && !fs.existsSync(platformIncludePathBaseFolder)) {
-            return resolve(), output.appendLine(`[Error] Passed include path (base folder) "${platformIncludePathBaseFolder}" doesn't exist!`);
-          } else {
-            cliInclude = ` /include:"${platformIncludePathBaseFolder}"`;
-            //Cpp_prop(platformIncludePath);
-          }
+          cliInclude = ` /include:"${platformIncludePathBaseFolder}"`;
         } else {
           cliInclude = '';
         }
@@ -157,9 +155,7 @@ async function CompileCommand(mode) {
         console.log(`fileToCompileLogCliPath = `, fileToCompileLogCliPath.toString());
 
         // The command we'll execute in order to compile current file.
-        const platformSpecificExecutable = new UniversalPath(config.platformExecutablePath(platformVersion)).asTargetPath();
-
-        let command = `"${platformSpecificExecutable}" /compile:"${fileToCompileCliPath.asCliPath()}"${cliInclude}${mode == 1 ? '' : ' /s'} /log:"${fileToCompileLogCliPath.asCliPath()}"`;
+        let command = `"${platformSpecificExecutablePath}" /compile:"${fileToCompileCliPath.asCliPath()}"${cliInclude}${mode == 1 ? '' : ' /s'} /log:"${fileToCompileLogCliPath.asCliPath()}"`;
 
         console.log(`Command 1: ${command}`);
 
@@ -175,12 +171,16 @@ async function CompileCommand(mode) {
 
         output.appendLine(`$ ${command}`);
 
-        childProcess.exec(command, wine.wslOptions, async (err, stdout, stderr) => {
-          if (stderr && false) {
+        childProcess.exec(command, wine.wslOptions, async (/*err, stdout, stderr*/) => {
+          /*
+          @fixit wine should not output warnings to stderr!
+
+          if (stderr) {
             resolve();
             output.appendLine(`[Error] Compilation failed!\n\nLog from stderr:\n${stderr}\n\nLog from stdout:\n${stdout}`);
             return;
           }
+          */
 
           try {
             // Reading log file.

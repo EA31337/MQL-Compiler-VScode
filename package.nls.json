@@ -2,9 +2,13 @@
   "mql_compiler.commands.checkSyntax.title": "Check syntax",
   "mql_compiler.commands.compileFile.title": "Compile file",
   "mql_compiler.configuration.IncludePath4.description": "(optional) Path to MetaEditor 4 include directory",
+  "mql_compiler.configuration.IncludePath4IsWinePath.description": "Whether path to MetaEditor 4 include directory is a Wine path",
   "mql_compiler.configuration.IncludePath5.description": "(optional) Path to MetaEditor 5 include directory",
+  "mql_compiler.configuration.IncludePath5IsWinePath.description": "Whether path to MetaEditor 5 include directory is a Wine path",
   "mql_compiler.configuration.MetaEditor4Path.description": "Path to MetaEditor 4 (e.g. /Path/MT4/metaeditor.exe)",
+  "mql_compiler.configuration.MetaEditor4PathIsWinePath.description": "Whether path to MetaEditor 4 is a Wine path",
   "mql_compiler.configuration.MetaEditor5Path.description": "Path to MetaEditor 5 (e.g. /Path/MT5/metaeditor64.exe)",
+  "mql_compiler.configuration.MetaEditor5PathIsWinePath.description": "Whether path to MetaEditor 4 is a Wine path",
   "mql_compiler.configuration.RemoveLog.description": "Remove log file after check/compile action.",
-  "mql_compiler.configuration.PassThroughWSL.description": "Pass command through WSL (only for Windows platform)."
+  "mql_compiler.configuration.PassThroughWSL.description": "Pass command through WSL on Windows or use WSL backend when running VS Code on WSL's Ubuntu."
 }
