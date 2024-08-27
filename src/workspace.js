@@ -27,7 +27,7 @@ async function searchFileAndGenerateUri(fileName) {
 async function addFolderToWorkspace(folderPath) {
   const uri = vscode.Uri.file(folderPath);
   const workspaceFolder = { uri, name: uri.fsPath, index: 0 };
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve/*, reject*/) => {
     // Set up the event listener for workspace folder changes
     const disposable = vscode.workspace.onDidChangeWorkspaceFolders(event => {
       disposable.dispose(); // Clean up the listener after the event is handled.

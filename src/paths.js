@@ -1,10 +1,111 @@
 const pathModule = require('path');
 
+const { execSync } = require('child_process');
+
 /**
  * Converts backslashes to slashes.
  */
 function slashize(path) {
   return path.replace(/\\/g, '/');
+}
+
+/**
+ * Converts slashes to backslashes.
+ */
+function backslashize(path) {
+  return path.replace(/\//g, '\\');
+}
+
+const reDosDevices = /^\/home\/([^/]+)\/\.wine\/dosdevices\/([a-z]):\//i;
+
+const reWindowsDriveLetterPath = /^([a-zA-Z]):(\\|\/)/;
+
+const reUnixMntWindowsLetter = /^\/mnt\/([a-zA-Z])\//;
+
+/**
+ * Converts Windows path "<letter>:\\..." into Unix path "/mnt/<letter>/...".
+ */
+function convertWindowsHostToWslPath(windowsPath) {
+  return windowsPath.replace(/^([a-zA-Z]):\\/, (match, letter) => {
+    return `/mnt/${letter.toLowerCase()}/`;
+  }).replace(/\\/g, '/'); // Convert all remaining backslashes to forward slashes.
+}
+
+/**
+ * Returns currently logged in user.
+ */
+const getUserName = (() => {
+  if (process.platform == 'win32')
+    throw new Error(`Calling getWslUserName() is only possible in WSL or Unix.`);
+
+  let cachedUserName = null; // Variable to store the cached username
+
+  return () => {
+    if (!cachedUserName) {
+      // If no cached result, execute the command to get the WSL username
+      cachedUserName = execSync('whoami').toString().trim();
+    }
+    return cachedUserName;
+  };
+})();
+
+/**
+ * Converts path in format:
+ * "<letter>:\foo\bar"
+ * into Windows path in format:
+ * "/home/<user>/.wine/dosdevices/<letter>:/foo/bar"
+ * Where <user> is the currently logged in user.
+*/
+function convertWinePathToUnixDosDevicesPath(windowsPath) {
+  const userName = getUserName();
+
+  return windowsPath.replace(/^([a-zA-Z]):\\/, (match, letter) => {
+    return `/home/${userName}/.wine/dosdevices/${letter.toLowerCase()}:/`;
+  }).replace(/\\/g, '/'); // Convert all remaining backslashes to forward slashes
+}
+
+/**
+ * Retrieves current WSL linux distribution name. Only possible in WSL or Unix.
+ */
+const getWslMachineName = (() => {
+  if (process.platform == 'win32')
+    throw new Error(`Calling getWslMachineName() is only possible in WSL or Unix.`);
+
+  let cachedName = null; // Variable to store the cached result.
+
+  return () => {
+    if (!cachedName) {
+      // If no cached result, run the command to get the WSL machine name.
+      const wslOutput = execSync('wsl -l -q').toString().trim();
+      cachedName = wslOutput.split('\n')[0]; // Cache the first line (default WSL distribution).
+    }
+    return cachedName;
+  };
+})();
+
+/**
+ * Converts path in format:
+ * "/home/<user>/.wine/dosdevices/<letter>:/foo/bar"
+ * into Windows path in format:
+ * "\\wsl$\<wsl-machine-name>\home\<user>\.wine\dosdevices\<letter>:\foo\bar"
+ */
+function convertUnixDosDevicesPathIntoWindowsWSLPath(unixPath, wslMachineNameOverride) {
+  const wslMachineName = wslMachineNameOverride ?? getWslMachineName();
+
+  // Replace the Unix-style path with the appropriate Windows-style path
+  return unixPath.replace(reDosDevices, (match, user, letter) => {
+    return `\\\\wsl$\\${wslMachineName}\\home\\${user}\\.wine\\dosdevices\\${letter.toLowerCase()}:\\`;
+  }).replace(/\//g, '\\'); // Convert all remaining slashes to backslashes
+}
+
+/**
+ * Converts Unix path "/mnt/<letter>/..." into Windows path "<letter>:\\...".
+ */
+function convertUnixMntPathToWindowsPath(unixPath) {
+  // Use a regular expression to match and capture the letter after "/mnt/"
+  return unixPath.replace(/^\/mnt\/([a-zA-Z])\//i, (match, letter) => {
+    return letter.toUpperCase() + ':\\';
+  }).replace(/\//g, '\\'); // Replace all remaining forward slashes with backslashes
 }
 
 /**
@@ -37,26 +138,52 @@ function convertWindowsHostToWinePath(windowsPath) {
  * Converts WSL or Unix path into inside-wine path.
  */
 function convertUnixPathToWinePath(unixPath) {
-  // Check if the path starts with "/mnt/<drive-letter>/"
-  const mntPattern = /^\/mnt\/([a-zA-Z])\//;
+  let mntPattern = /^\/mnt\/([a-zA-Z])\//;
 
-  const match = unixPath.match(mntPattern);
+  // Check if the path starts with "/mnt/<drive-letter>/".
+  let match = unixPath.match(mntPattern);
+
+  let winePath;
+
   if (match) {
-    // Extract the drive letter and convert it to upper case
-    const driveLetter = match[1].toUpperCase();
+    // Extract the drive letter and convert it to upper case.
+    const driveLetter = match[1].toLowerCase();
 
-    // Remove the "/mnt/<drive-letter>/" part from the path
-    let winePath = unixPath.replace(mntPattern, '');
+    // Remove the "/mnt/<drive-letter>/" part from the path.
+    winePath = unixPath.replace(mntPattern, '');
 
-    // Replace forward slashes with backslashes
-    winePath = winePath.replace(/\//g, '\\');
+    // Replace backslashes with forward slashes.
+    winePath = slashize(winePath);
 
     // Prepend the drive letter and colon
-    return `${driveLetter}:\\${winePath}`;
+    winePath = `Z:/mnt/${driveLetter}/${winePath}`;
+
+    // Back-slashizing for Windows.
+    return backslashize(winePath);
   }
 
-  // If no "/mnt/<drive-letter>/" pattern is found, just replace forward slashes with backslashes
-  return unixPath.replace(/\//g, '\\');
+  mntPattern = /^\/home\/.*?\/.wine\/dosdevices\/([a-zA-Z]):\//;
+
+  // Check if the path starts with "/home/<user>/.wine/dosdevices/<drive-letter>:/".
+  match = unixPath.match(mntPattern);
+
+  if (match) {
+    // Extract the drive letter and convert it to upper case.
+    const driveLetter = match[1].toUpperCase();
+
+    // Removing starting string from from the path.
+    winePath = unixPath.replace(mntPattern, '');
+
+    // Replace backslashes with forward slashes.
+    winePath = slashize(winePath);
+
+    winePath = `${driveLetter}:/${winePath}`;
+
+    // Back-slashizing for Windows.
+    return backslashize(winePath);
+  }
+
+  return slashize(unixPath);
 }
 
 function convertWineToUnixPath(winePath) {
@@ -73,11 +200,11 @@ function convertWineToUnixPath(winePath) {
     let unixPath = winePath.replace(driveLetterPattern, '');
 
     // Replace backslashes with forward slashes
-    unixPath = unixPath.replace(/\\/g, '/');
+    unixPath = slashize(unixPath);
 
     if (driveLetter.toLowerCase() != 'z')
       // Prepend "/mnt/" followed by the drive letter for the Unix style.
-      return `/mnt/${driveLetter}${unixPath}`;
+      return `/mnt/${driveLetter}/${unixPath}`;
 
     // Z:/ means root-based unix path.
     return `/${unixPath}`;
@@ -87,11 +214,12 @@ function convertWineToUnixPath(winePath) {
   return winePath.replace(/\\/g, '/');
 }
 
-function convertWineToWindowsPath(winePath) {
-  // Check if the path starts with "Z:/mnt/<drive-letter>/"
+function convertWineToWindowsPath(winePath, wslMachineNameOverride) {
+  // Check if the path starts with "Z:\mnt\<drive-letter>\"
   const winePathPattern = /^Z:\\mnt\\([a-zA-Z])\\/;
 
-  const match = winePath.match(winePathPattern);
+  let match = winePath.match(winePathPattern);
+
   if (match) {
     // Extract the drive letter and convert it to upper case
     const driveLetter = match[1].toUpperCase();
@@ -100,13 +228,23 @@ function convertWineToWindowsPath(winePath) {
     let windowsPath = winePath.replace(winePathPattern, '');
 
     // Replace backslashes with forward slashes
-    windowsPath = windowsPath.replace(/\\/g, '/');
+    windowsPath = slashize(windowsPath);
 
     // Prepend the drive letter and colon
-    return `${driveLetter}:/${windowsPath}`;
+    windowsPath = `${driveLetter}:\\${windowsPath}`;
+
+    // Back-slashizing for Windows.
+    return backslashize(windowsPath);
   }
 
-  // If no "Z:/mnt/<drive-letter>/" pattern is found, return the path as is with slashes converted
+  match = winePath.match(reDosDevices);
+
+  if (match) {
+    winePath = convertUnixDosDevicesPathIntoWindowsWSLPath(winePath, wslMachineNameOverride);
+    return winePath;
+  }
+
+  // If no "Z:/mnt/<drive-letter>/" pattern is found, return the path as is with slashes converted.
   return winePath.replace(/\\/g, '/');
 }
 
@@ -125,7 +263,16 @@ function getFileInfo(path) {
 }
 
 module.exports = {
+  reDosDevices,
+  reWindowsDriveLetterPath,
+  reUnixMntWindowsLetter,
   slashize,
+  backslashize,
+  getWslMachineName,
+  convertWinePathToUnixDosDevicesPath,
+  convertWindowsHostToWslPath,
+  convertUnixDosDevicesPathIntoWindowsWSLPath,
+  convertUnixMntPathToWindowsPath,
   convertUnixPathToWinePath,
   convertWindowsHostToWinePath,
   convertWineToUnixPath,

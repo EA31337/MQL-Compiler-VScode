@@ -1,7 +1,7 @@
 const url = require('url');
 
 function replaceLog(str, f) {
-  let text = f ? '' : '\n\n', obj_hover = {}, ye;
+  let text = f ? '' : '\n\n', obj_hover = {};
   str.replace(/\u{FEFF}/gu, '').split('\n').forEach(item => {
     if (item.includes(f ? ': information: compiling' : ': information: checking')) {
       let regEx = new RegExp(`(?<=${f ? 'compiling' : 'checking'}.).+'`, 'gi'),
@@ -28,13 +28,10 @@ function replaceLog(str, f) {
 
       if (Err != null) {
         text += f ? '[Error] ' + item : '[Error] Result: ' + item.match(/\d+.error.+/);
-        ye = true;
       } else if (War != null) {
         text += f ? '[Warning] ' + item : '[Warning] Result: ' + item.match(/\d+.error.+/);
-        ye = false;
       } else {
         text += f ? '[Done] ' + item : '[Done] Result: ' + item.match(/\d+.error.+/);
-        ye = false;
       }
     }
     else {
@@ -46,7 +43,7 @@ function replaceLog(str, f) {
       name_res = name_res.replace(gh, '');
 
       if (link_res.match(/[a-z]:\\.+/gi) && name_res != '') {
-        Object.assign(obj_hover, { [name_res + ' ' + String(link_res.match(/\((?:\d+\,\d+)\)$/gm))]: { ['link']: String(url.pathToFileURL(link_res).href.replace(/\((?=(\d+,\d+).$)/gm, '#').replace(/\)$/gm, '')), ['number']: String(gh) } });
+        Object.assign(obj_hover, { [name_res + ' ' + String(link_res.match(/\((?:\d+,\d+)\)$/gm))]: { ['link']: String(url.pathToFileURL(link_res).href.replace(/\((?=(\d+,\d+).$)/gm, '#').replace(/\)$/gm, '')), ['number']: String(gh) } });
         text += name_res + ' ' + link_res.match(/(.)(?:\d+,\d+).$/gm) + '\n';
       }
       else {

@@ -1,8 +1,4 @@
 const vscode = require('vscode');
-const output = require('./output');
-const includes = require('./includes');
-const workspace = require('./workspace');
-const wine = require('./wine');
 const { UniversalPath } = require('./universalpath');
 
 const reFileNameOnly = /^DISABLEDX$/i;
@@ -12,12 +8,9 @@ const reErrorOrWarning = /(^.*?)\((\d+),(\d+)\) : (error|warning) \d+: (.*?)$/;
  * Parses log and builds information about warning, errors and other important information.
  * @param {string} content
  */
-async function parse(content, platformVersion) {
+async function parse(content/*, platformVersion*/) {
   // Firstly, we split content into lines. We will be checking one line at a time.
-  lines = content.split(/\r?\n|\r/);
-
-  // File that previously occured in the log.
-  let currentFile = '';
+  const lines = content.split(/\r?\n|\r/);
 
   const result = {
     diagnostics: {}
@@ -27,7 +20,6 @@ async function parse(content, platformVersion) {
     const isFileNameOnly = reFileNameOnly.exec(line);
 
     if (isFileNameOnly) {
-      currentFile = isFileNameOnly[1];
       continue;
     }
 
