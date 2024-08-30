@@ -21,12 +21,12 @@
       {
         "command": "mql_compiler.checkSyntax",
         "title": "%mql_compiler.commands.checkSyntax.title%",
-				"icon": "$(check)"
+        "icon": "$(check)"
       },
       {
         "command": "mql_compiler.compileFile",
         "title": "%mql_compiler.commands.compileFile.title%",
-				"icon": "$(play)"
+        "icon": "$(play)"
       }
     ],
     "configuration": {
@@ -113,7 +113,7 @@
     "lint": "eslint .",
     "package": "vsce package",
     "pretest": "npm run lint",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx mocha src/tests.js"
   },
   "repository": {
     "type": "git",
@@ -142,6 +142,7 @@
     "@vscode/vsce": "^2.29.0",
     "glob": "^10.4.2",
     "globals": "^15.7.0",
+    "mocha": "^10.7.3",
     "typescript": "^5.5.2",
     "typescript-eslint": "^7.14.1"
   }

@@ -1,4 +1,6 @@
-const config = require('./config');
+// Note that "config" could be undefined if we're doing testing outside the VS Code.
+const config = typeof global.it === 'function' ? undefined : require('./config');
+
 const paths = require('./paths');
 
 /**
@@ -231,7 +233,8 @@ class UniversalPath {
     if (this.isWslOverride !== undefined)
       return this.isWslOverride;
 
-    return config.current.MTE.PassThroughWSL;
+    // Note that "config" could be undefined if we're doing testing outside the VS Code.
+    return config?.current.MTE.PassThroughWSL ?? false;
   }
 }
 
