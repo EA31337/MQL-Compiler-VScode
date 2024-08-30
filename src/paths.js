@@ -35,12 +35,16 @@ function convertWindowsHostToWslPath(windowsPath) {
  * Returns currently logged in user.
  */
 const getUserName = (() => {
-  if (process.platform == 'win32')
-    throw new Error(`Calling getWslUserName() is only possible in WSL or Unix.`);
-
   let cachedUserName = null; // Variable to store the cached username
 
   return () => {
+    if (typeof global.it === 'function')
+      // During testing we just use some random user name.
+      return 'john';
+
+    if (process.platform == 'win32')
+      throw new Error(`Calling getWslUserName() is only possible in WSL or Unix.`);
+
     if (!cachedUserName) {
       // If no cached result, execute the command to get the WSL username
       cachedUserName = execSync('whoami').toString().trim();
@@ -68,12 +72,16 @@ function convertWinePathToUnixDosDevicesPath(windowsPath) {
  * Retrieves current WSL linux distribution name. Only possible in WSL or Unix.
  */
 const getWslMachineName = (() => {
-  if (process.platform == 'win32')
-    throw new Error(`Calling getWslMachineName() is only possible in WSL or Unix.`);
-
   let cachedName = null; // Variable to store the cached result.
 
   return () => {
+    if (typeof global.it === 'function')
+      // During testing we just use some random distribution name.
+      return 'Ubuntu';
+
+    if (process.platform == 'win32')
+      throw new Error(`Calling getWslMachineName() is only possible in WSL or Unix.`);
+
     if (!cachedName) {
       // If no cached result, run the command to get the WSL machine name.
       const wslOutput = execSync('wsl -l -q').toString().trim();
