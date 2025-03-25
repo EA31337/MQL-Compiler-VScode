@@ -2,7 +2,7 @@ const vscode = require('vscode');
 
 module.exports = {
   // You may force debug logging via switching this to true.
-  forceEnable: false,
+  forceEnable: true,
 
   // Whether we want to override extension settings to the ones in "configOverride".
   overrideConfig: false,

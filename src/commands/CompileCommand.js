@@ -115,8 +115,14 @@ async function CompileCommand(mode) {
 
         let platformIncludePathBaseFolder = '';
 
-        if (config.platformIncludePath(platformVersion).length > 0 && config.platformIncludePath(platformVersion).endsWith("/Include"))
-          platformIncludePathBaseFolder = config.platformIncludePath(platformVersion).substring(0, config.platformIncludePath(platformVersion).length - 8);
+        if (config.platformIncludePath(platformVersion).length > 0) {
+          let includePath = config.platformIncludePath(platformVersion);
+
+          if (config.platformIncludePath(platformVersion).endsWith("/Include"))
+            includePath = includePath.substring(0, config.platformIncludePath(platformVersion).length - 8);
+
+          platformIncludePathBaseFolder = includePath;
+        }
 
         // We want include path to be Windows-specific.
         platformIncludePathBaseFolder = new UniversalPath(platformIncludePathBaseFolder, config.platformIncludePathIsWinePath(platformVersion)).asCliPath();

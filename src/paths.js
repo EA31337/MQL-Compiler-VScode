@@ -191,6 +191,14 @@ function convertUnixPathToWinePath(unixPath) {
     return backslashize(winePath);
   }
 
+  // Check if the path starts with "/workspaces" (codespaces "Z:\workspaces").
+  if (unixPath.startsWith('/workspaces/')) {
+    winePath = 'Z:' + unixPath;
+
+    // Back-slashizing for Windows.
+    return backslashize(winePath);
+  }
+
   return slashize(unixPath);
 }
 
